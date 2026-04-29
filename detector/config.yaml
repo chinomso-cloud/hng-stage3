@@ -1,0 +1,15 @@
+# detector/config.yaml
+network:
+  interface: "eth0"
+  nginx_log: "/var/lib/docker/volumes/hng-stage3_HNG-nginx-logs/_data/hng-access.log"
+
+thresholds:
+  z_score: 3.0
+  multiplier: 5.0
+  error_multiplier: 3.0
+
+slack:
+  webhook_url: "https://hooks.slack.com/services/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"
+
+ban_policy:
+  intervals: [600, 1800, 7200] # 10m, 30m, 2h in seconds

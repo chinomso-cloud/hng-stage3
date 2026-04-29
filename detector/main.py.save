@@ -1,0 +1,35 @@
+import json
+import time
+from monitor import get_log_stream
+from baseline import TrafficEngine
+from blocker import ban_ip, unban_ip
+from notifier import notify_slack
+
+# Configuration
+LOG_PATH = "/var/lib/docker/volumes/hng-stage3_HNG-nginx-logs/_data/hng-access.log"
+AUDIT_LOG = "detector/audit.log"
+BAN_TIME = 600 # 10 minutes
+
+engine = TrafficEngine()
+active_bans = {} # {ip: expiry_timestamp}
+
+print("🛡️ Stage 2 Active. Monitoring for anomalies...")
+
+for log in get_log_stream(LOG_PATH):
+    ip = log['source_ip']
+    engine.add_request(ip)
+    
+    # Check for expired bans
+    now = time.time()
+    for banned_ip, expiry in list(active_bans.items()):
+        if now > expiry:
+            unban_ip(banned_ip)
+            del active_bans[banned_ip]
+
+    mean, stdev = engine.get_stats()
+    # Fixed indentation here
+    current_rate = len(engine.ip_windows.get(ip, []))
+    z_score = (current_rate - mean) / stdev if stdev > 0 else 0
+
+    # THRESHOLD TRIGGER
+    
